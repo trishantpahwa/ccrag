@@ -67,7 +67,8 @@ Claude Code will now automatically call `search_codebase` whenever it needs to u
 ## How the index works
 
 - **Chunking**: Uses [tree-sitter](https://tree-sitter.github.io) to split code at function/class/method boundaries — not arbitrary line windows. Falls back to line-window chunking for unsupported languages.
-- **Embeddings**: [`all-MiniLM-L6-v2`](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) via `sentence-transformers`. Runs entirely locally, no API keys required.
+- **Embeddings**: [`mixedbread-ai/mxbai-embed-large-v1`](https://huggingface.co/mixedbread-ai/mxbai-embed-large-v1) via `sentence-transformers` — 1024-dim, top-tier MTEB retrieval, runs entirely locally with no API keys and no remote code. Override with `--model <name>` (e.g. a lighter model like `BAAI/bge-base-en-v1.5`, or a code-specialized one like `jinaai/jina-embeddings-v2-base-code`, which needs `trust_remote_code=True` and a compatible `transformers`).
+- **Model cache**: weights are cached in `.ccrag/models/` on first run and reused offline afterward — downloaded once, never again.
 - **Storage**: [LanceDB](https://lancedb.com) in `.ccrag/` inside your project. Add `.ccrag/` to `.gitignore`.
 - **Search**: Cosine similarity over dense embeddings. Returns top-K chunks with file path, line range, language, and source.
 
@@ -84,11 +85,26 @@ Python, JavaScript, TypeScript, TSX, Go, Rust, Java, C, C++, Ruby, PHP, C#, Swif
 
 ## Incremental updates
 
-```bash
-ccrag watch .   # re-indexes any file saved, in the background
+`ccrag index .` is incremental. It keeps a manifest of per-file content hashes in `.ccrag/manifest.json` and on each run:
+
+- **skips unchanged files entirely** — no re-chunking, no re-embedding (the expensive step);
+- **re-embeds only changed/new files**;
+- **prunes chunks for deleted files**;
+- **rebuilds from scratch if you switch `--model`** (old vectors are incompatible).
+
+So re-running it after editing a few files only touches those files:
+
+```
+$ ccrag index .
+Found 20 files (1 new/changed, 19 unchanged, 0 removed)
+Done. 3 chunks from 1 file(s) embedded, 0 file(s) removed.
 ```
 
-Or just re-run `ccrag index .` — it upserts, so unchanged chunks are overwritten in place (fast for small diffs).
+For continuous updates, run the watcher, which re-indexes each file on save (and keeps the manifest in sync):
+
+```bash
+ccrag watch .
+```
 
 ## License
 

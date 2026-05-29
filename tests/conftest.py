@@ -25,8 +25,10 @@ class FakeEmbedder:
         self.model_name = model_name
         self.cache_folder = cache_folder
         self._dim = dim
+        self.embedded_texts: list[str] = []  # every text ever embedded, for assertions
 
     def embed(self, texts: list[str]) -> np.ndarray:
+        self.embedded_texts.extend(texts)
         if not texts:
             return np.zeros((0, self._dim), dtype=np.float32)
         return np.stack([self._vec(t) for t in texts])

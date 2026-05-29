@@ -5,7 +5,13 @@ from pathlib import Path
 
 import numpy as np
 
-DEFAULT_MODEL = "all-MiniLM-L6-v2"
+# Best retrieval quality among models that load natively (no remote code):
+# 1024-dim, BERT-large, top of its tier on MTEB. Heavier than bge-base but a
+# clear quality win. Code-specialized models (e.g. jinaai/jina-embeddings-v2-base-code)
+# can score higher on code search but ship custom modeling code that requires
+# trust_remote_code=True and breaks on mismatched transformers versions; use
+# --model to opt into one if your environment supports it.
+DEFAULT_MODEL = "mixedbread-ai/mxbai-embed-large-v1"
 MODELS_DIRNAME = "models"
 
 
