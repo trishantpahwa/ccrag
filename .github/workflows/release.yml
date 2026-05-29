@@ -2,14 +2,9 @@ name: Release
 
 # Publishes ccrag to PyPI when a GitHub Release is published.
 #
-# Uses PyPI Trusted Publishing (OIDC) — no API tokens or secrets required.
-# One-time setup on PyPI (https://pypi.org/manage/account/publishing/):
-#   * PyPI Project Name: ccrag
-#   * Owner:             trishantpahwa
-#   * Repository name:   ccrag
-#   * Workflow name:     release.yml
-#   * Environment name:  pypi
-# Then create a matching GitHub Environment named "pypi" (Settings → Environments).
+# Authentication: a PyPI API token stored as a repository secret named
+# PYPI_API_TOKEN (Settings → Secrets and variables → Actions → New repository
+# secret). The workflow never sees the raw token — it is injected at runtime.
 #
 # To cut a release: bump `version` in pyproject.toml, tag it `vX.Y.Z`, and publish
 # a GitHub Release for that tag. The tag must match the pyproject version.
@@ -60,11 +55,6 @@ jobs:
     name: Publish to PyPI
     needs: build
     runs-on: ubuntu-latest
-    environment:
-      name: pypi
-      url: https://pypi.org/p/ccrag
-    permissions:
-      id-token: write  # required for trusted publishing
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -72,3 +62,6 @@ jobs:
           path: dist/
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # Username is implicitly __token__ when a token password is supplied.
+          password: ${{ secrets.PYPI_API_TOKEN }}
