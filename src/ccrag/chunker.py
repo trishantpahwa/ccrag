@@ -5,10 +5,44 @@ from dataclasses import dataclass
 from pathlib import Path
 
 try:
-    from tree_sitter_languages import get_language, get_parser
+    # Preferred: actively maintained, ships wheels for current Python versions.
+    from tree_sitter_language_pack import get_language as _get_language
     _TS_AVAILABLE = True
 except Exception:
-    _TS_AVAILABLE = False
+    try:
+        # Legacy fallback for environments that still have the old package.
+        from tree_sitter_languages import get_language as _get_language
+        _TS_AVAILABLE = True
+    except Exception:
+        _TS_AVAILABLE = False
+
+# Cache one official tree_sitter.Parser per language. We build parsers from the
+# Language object ourselves rather than using the pack's get_parser(), whose
+# returned objects expose an incompatible Node API on some platforms.
+_PARSER_CACHE: dict = {}
+
+
+def _get_parser(language: str):
+    if language in _PARSER_CACHE:
+        return _PARSER_CACHE[language]
+    from tree_sitter import Parser
+    lang = _get_language(language)
+    try:
+        parser = Parser(lang)
+    except TypeError:
+        # Older tree_sitter API: construct empty, then set the language.
+        parser = Parser()
+        parser.set_language(lang)
+    _PARSER_CACHE[language] = parser
+    return parser
+
+
+def ast_available() -> bool:
+    """Whether tree-sitter AST chunking is available in this environment.
+
+    When False, ccrag falls back to line-window chunking for all files.
+    """
+    return _TS_AVAILABLE
 
 EXTENSION_TO_LANGUAGE = {
     ".py": "python",
@@ -106,8 +140,7 @@ def _fallback_chunks(path: Path, source: str, language: str) -> list[Chunk]:
 
 def _ast_chunks(path: Path, source: str, language: str) -> list[Chunk]:
     try:
-        parser = get_parser(language)
-        lang = get_language(language)
+        parser = _get_parser(language)
     except Exception:
         return _fallback_chunks(path, source, language)
 

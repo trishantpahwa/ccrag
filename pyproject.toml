@@ -22,7 +22,7 @@ dependencies = [
 [project.optional-dependencies]
 ast = [
     "tree-sitter>=0.22",
-    "tree-sitter-languages>=1.10",
+    "tree-sitter-language-pack>=0.3",
 ]
 watch = ["watchdog>=3.0"]
 

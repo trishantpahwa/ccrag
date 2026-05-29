@@ -4,7 +4,7 @@ import gc
 import hashlib
 from pathlib import Path
 
-from .chunker import Chunk, chunk_file, iter_files
+from .chunker import Chunk, ast_available, chunk_file, iter_files
 from .embedder import Embedder
 from .store import delete_file_chunks, get_or_create_table, open_db, upsert_chunks
 
@@ -36,6 +36,12 @@ def index_repo(root: Path, embedder: Embedder, force: bool = False, verbose: boo
 
     if verbose:
         print(f"Found {len(files)} files to index under {root}")
+        if not ast_available():
+            print(
+                "Warning: tree-sitter not installed — using line-window chunking "
+                "for all files (function/class-boundary chunking disabled). "
+                "Install it with: pip install 'ccrag[ast]'"
+            )
 
     total_chunks = 0
     pending: list[Chunk] = []

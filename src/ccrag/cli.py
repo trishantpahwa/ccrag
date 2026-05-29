@@ -111,6 +111,7 @@ def watch(path: str, model: str, watch: bool):
 @click.argument("path", default=".", type=click.Path(exists=True, file_okay=False))
 def status(path: str):
     """Show index statistics for the codebase at PATH."""
+    from .chunker import ast_available
     from .store import stats
 
     root = Path(path).resolve()
@@ -119,6 +120,14 @@ def status(path: str):
         click.echo("Not indexed. Run `ccrag index` first.")
     else:
         click.echo(f"Index: {s['files']} files, {s['chunks']} chunks")
+
+    if ast_available():
+        click.echo("Chunking: AST (tree-sitter, function/class boundaries)")
+    else:
+        click.echo(
+            "Chunking: line-window fallback — tree-sitter not installed. "
+            "Install with: pip install 'ccrag[ast]'"
+        )
 
 
 @main.command(name="mcp-config")
