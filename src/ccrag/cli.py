@@ -19,19 +19,21 @@ def main():
 @click.option("--force", is_flag=True, help="Drop and rebuild the index from scratch.")
 def index(path: str, model: str, force: bool):
     """Index a codebase at PATH (default: current directory)."""
-    from .embedder import Embedder
+    from .embedder import Embedder, models_cache_dir
     from .indexer import index_repo
 
     root = Path(path).resolve()
 
     if force:
         import shutil
-        ccrag_dir = root / ".ccrag"
-        if ccrag_dir.exists():
-            shutil.rmtree(ccrag_dir)
-            click.echo(f"Removed existing index at {ccrag_dir}")
+        # Drop only the vector index — keep the cached model so --force does not
+        # trigger a re-download.
+        index_dir = root / ".ccrag" / "index"
+        if index_dir.exists():
+            shutil.rmtree(index_dir)
+            click.echo(f"Removed existing index at {index_dir}")
 
-    embedder = Embedder(model)
+    embedder = Embedder(model, cache_folder=models_cache_dir(root))
     index_repo(root, embedder, force=force, verbose=True)
 
 
@@ -68,11 +70,11 @@ def watch(path: str, model: str, watch: bool):
     import time
 
     from .chunker import IGNORE_DIRS, TEXT_EXTENSIONS
-    from .embedder import Embedder
+    from .embedder import Embedder, models_cache_dir
     from .indexer import index_file
 
     root = Path(path).resolve()
-    embedder = Embedder(model)
+    embedder = Embedder(model, cache_folder=models_cache_dir(root))
 
     class Handler(FileSystemEventHandler):
         def on_modified(self, event):

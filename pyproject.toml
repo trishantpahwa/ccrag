@@ -25,9 +25,14 @@ ast = [
     "tree-sitter-language-pack>=0.3",
 ]
 watch = ["watchdog>=3.0"]
+test = ["pytest>=8"]
 
 [project.scripts]
 ccrag = "ccrag.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ccrag"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

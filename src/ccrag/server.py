@@ -5,7 +5,7 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
-from .embedder import Embedder
+from .embedder import Embedder, models_cache_dir
 from .store import TABLE_NAME, open_db, search, stats
 
 mcp = FastMCP("ccrag")
@@ -59,5 +59,5 @@ def codebase_stats() -> str:
 def run_server(root: Path, model: str):
     global _root, _embedder
     _root = root.resolve()
-    _embedder = Embedder(model)
+    _embedder = Embedder(model, cache_folder=models_cache_dir(_root))
     mcp.run(transport="stdio")
